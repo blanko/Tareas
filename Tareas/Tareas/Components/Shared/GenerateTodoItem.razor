@@ -1,0 +1,28 @@
+﻿@inject TodoService TodoService
+
+<input @bind="taskCount" type="number" class="form-control d-inline w-auto" placeholder="Número de tareas a generar" />
+<button @onclick="() => GenerateTasks(taskCount)" class=" btn btn-success"><i class="fas fa-tasks"></i> Generar @taskCount Tareas</button>
+<button @onclick="() => GenerateTasks(10)" class=" btn btn-success"><i class="fas fa-tasks"></i> Generar 10 Tareas</button>
+<button @onclick="() => GenerateTasks(100000)" class=" btn btn-success"><i class="fas fa-tasks"></i> Generar 100K Tareas</button>
+
+@code {
+    private int taskCount = 10;
+
+    [Parameter]
+    public EventCallback OnTasksGenerated { get; set; }
+
+    private async Task GenerateTasks(int taskCount)
+    {
+        for (int i = 0; i < taskCount; i++)
+        {
+            var title = LoremWords.GenerateTitle();
+            var newTodo = new TodoItem
+                {
+                    Id = i,
+                    Title = title,
+                };
+            TodoService.AddGeneratedTodoItem(newTodo);
+        }
+        await OnTasksGenerated.InvokeAsync(null);
+    }
+}

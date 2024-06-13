@@ -1,0 +1,23 @@
+﻿@rendermode InteractiveServer
+@inject NavigationManager Navigation
+
+<button @onclick="ToggleView" class="btn btn-info ml-2" style="margin-top:3px">
+    <i class="fas @(IsDatabaseView ? "fa-database" : "fa-memory")"></i> @(IsDatabaseView ? "Vista Memoria" : "Vista DB (sin terminar)")
+</button>
+
+@code {
+
+    private bool IsDatabaseView => Navigation.Uri.Contains("/todo-context");
+
+    private void ToggleView()
+    {
+        if (IsDatabaseView)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            Navigation.NavigateTo("/todo-context");
+        }
+    }
+}

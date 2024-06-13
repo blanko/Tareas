@@ -1,0 +1,29 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    @* <div class="sidebar">
+        <NavMenu />
+    </div> *@
+
+    <main>
+        
+        <div class="top-row d-flex justify-content-between px-4">
+            <a href="#" target="_blank">
+                <img class="logo" alt="logo app tareas" src="img/taeas-logo.png" />
+            </a>
+            <a href="https://open-devlabs.com/aprende-trabaja-disfruta/itinerario-net-core-8-desarrollo-web-sql/" target="_blank">
+                <img alt="logo open-devlabs.com" src="img/OPEN-DEVLABS-2.png" />
+            </a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    Ha ocurrido un error.
+    <a href="" class="reload">Recargar Aplicación</a>
+    <a class="dismiss">🗙</a>
+</div>

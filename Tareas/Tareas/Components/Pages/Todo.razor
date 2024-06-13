@@ -1,0 +1,247 @@
+﻿@rendermode InteractiveServer
+
+@inject TodoService TodoService
+
+
+<input type="text" @bind="newTodoTitle" placeholder="Nueva tarea" class="form-control" @onkeydown="EnterKeyDownAddTodo" />
+
+<button @onclick="AddTodo" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Agregar
+</button>
+<button @onclick="RemoveSelectedTodoItems" class="btn btn-danger ml-2">
+    <i class="fas fa-trash-alt"></i> Eliminar Seleccionadas
+</button>
+<button @onclick="RemoveCompletedTodos" class="btn btn-warning ml-2">
+    <i class="fas fa-broom"></i> Eliminar Completadas
+</button>
+
+
+
+<div class="d-flex justify-content-start align-items-center mb-2 mt-4">
+    <input type="checkbox" @onchange="ToggleSelectAll" />
+    <label class="ml-4"> Seleccionar Todo (página actual)</label>
+</div>
+
+
+
+<!-- ListTodo -->
+<ul class="list-group">
+    @foreach (var todo in PaginatedTodos)
+    {
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+            <div class="align-items-center">
+                <input type="checkbox" @onclick="() => ToggleSelection(todo.Id)" />
+                @* <input type="checkbox" @checked="IsTodoSelected(todo.Id)" @onchange="() => ToggleSelection(todo.Id)" /> *@
+                <span class="badge @GetStatusBadgeClass(todo.Status) ml-2">@todo.Status</span>
+                <span class="ml-2">@todo.Title</span>
+            </div>
+            
+            <div class="btn-group d-flex align-items-center mt-2 mt-md-0">
+                <div class="btn-group" role="group" aria-label="Default button group">
+                    <button @onclick="() => ChangeStatus(todo.Id)" class="btn btn-success btn-sm " disabled="@todo.IsBlocked">
+                        <i class="fas fa-check-circle"></i> Hecho
+                    </button>
+                    <button @onclick="() => RemoveTodoItem(todo.Id)" class="btn btn-danger btn-sm ml-2">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+                <div class="custom-control custom-switch d-inline">
+                    <input type="checkbox" class="custom-control-input" id="customSwitch_@todo.Id" @bind="todo.IsBlocked">
+                    <label class="custom-control-label" for="customSwitch_@todo.Id">
+                        <i class="fas fa-lock ml-1"></i> Bloquear
+                    </label>
+                </div>
+            </div>
+        </li>
+    }
+</ul>
+<!-- /ListTodo -->
+
+
+
+<!-- Paginación -->
+<div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+    <div>
+        <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(!HasPreviousPage)">
+            Anterior
+        </button>
+        <button class="btn btn-secondary" @onclick="NextPage" disabled="@(!HasNextPage)">
+            Siguiente
+        </button>
+    </div>
+    <div>
+        <select class="form-control" @onchange="@(e => GoToPage(int.Parse(e.Value.ToString())))">
+            @for (int i = 1; i <= TotalPages; i++)
+            {
+                <option value="@i" selected="@(i == CurrentPage)">@i</option>
+            }
+        </select>
+    </div>
+</div>
+<!-- /Paginación -->
+
+<GenerateTodoItem OnTasksGenerated="RefreshTasks" />
+<Menu></Menu>
+
+@code {
+
+    // Control TodoItems
+    private string? newTodoTitle;
+    private List<int> selectedTodos = new List<int>();
+    private bool selectAllCurrentPage = false;
+
+    protected override void OnInitialized()
+    {
+        TodoService.OnChange += StateHasChanged;
+    }
+
+    private void AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodoTitle))
+        {
+            var newTodo = new TodoItem { Title = newTodoTitle, IsBlocked = false, Status = TodoStatus.Planificada };
+            TodoService.AddTodoItem(newTodo);
+            newTodoTitle = string.Empty;
+        }
+    }
+
+    private void RemoveTodoItem(int id)
+    {
+        TodoService.RemoveTodoItem(id);
+    }
+
+    private void RemoveCompletedTodos()
+    {
+        TodoService.RemoveCompletedItems();
+    }
+
+    private void RemoveSelectedTodoItems()
+    {
+        foreach (var id in selectedTodos)
+        {
+            TodoService.RemoveTodoItem(id);
+        }
+        selectedTodos.Clear();
+        StateHasChanged(); // Ver checkBox Actualizados
+    }
+
+    private void ChangeStatus(int id)
+    {
+        TodoService.ChangeStatus(id);
+    }
+
+    private void EnterKeyDownAddTodo(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTodo();
+        }
+    }
+
+    private string GetStatusBadgeClass(TodoStatus status)
+    {
+        return status switch
+        {
+            TodoStatus.Planificada => "planificada",
+            TodoStatus.Iniciada => "iniciada",
+            TodoStatus.EnCurso => "encurso",
+            TodoStatus.Completada => "completada",
+            _ => ""
+        };
+    }
+
+    private void ToggleSelection(int id)
+    {
+        if (selectedTodos.Contains(id))
+        {
+            selectedTodos.Remove(id);
+        }
+        else
+        {
+            selectedTodos.Add(id);
+        }
+    }
+
+    private string IsTodoSelected(int id)
+    {
+        return (selectedTodos.Contains(id)) ? "checked" : "";
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        selectAllCurrentPage = (bool)e.Value;
+
+        if (selectAllCurrentPage)
+        {
+            foreach (var todo in PaginatedTodos)
+            {
+                if (!selectedTodos.Contains(todo.Id))
+                {
+                    selectedTodos.Add(todo.Id);
+                }
+            }
+        }
+        else
+        {
+            foreach (var todo in PaginatedTodos)
+            {
+                selectedTodos.Remove(todo.Id);
+            }
+        }
+
+        StateHasChanged(); // Ver checkBox Actualizados
+    }
+
+    private void RefreshTasks()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        TodoService.OnChange -= StateHasChanged;
+    }
+}
+
+
+
+@code {
+
+    // Paginación
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 10;
+
+    private IEnumerable<TodoItem> PaginatedTodos => TodoService.GetTodos()
+        .Skip((CurrentPage - 1) * PageSize)
+        .Take(PageSize);
+
+    private int TotalPages => (int)Math.Ceiling(TodoService.GetTodos().Count() / (double)PageSize);
+
+    private bool HasPreviousPage => CurrentPage > 1;
+
+    private bool HasNextPage => CurrentPage < TotalPages;
+
+    private void PreviousPage()
+    {
+        if (HasPreviousPage)
+        {
+            CurrentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (HasNextPage)
+        {
+            CurrentPage++;
+        }
+    }
+
+    private void GoToPage(int pageNumber)
+    {
+        if (pageNumber >= 1 && pageNumber <= TotalPages)
+        {
+            CurrentPage = pageNumber;
+        }
+    }
+}
